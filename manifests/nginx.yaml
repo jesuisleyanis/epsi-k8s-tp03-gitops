@@ -1,0 +1,28 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: web-gitops
+  labels: { app: web-gitops }
+spec:
+  replicas: 2                 # ← on modifiera cette valeur pour déclencher la synchro ArgoCD
+  selector:
+    matchLabels: { app: web-gitops }
+  template:
+    metadata:
+      labels: { app: web-gitops }
+    spec:
+      containers:
+        - name: nginx
+          image: nginx:1.27-alpine
+          ports: [{ containerPort: 80 }]
+          resources:
+            requests: { cpu: "25m", memory: "16Mi" }
+            limits:   { cpu: "100m", memory: "32Mi" }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: web-gitops
+spec:
+  selector: { app: web-gitops }
+  ports: [{ port: 80, targetPort: 80 }]
