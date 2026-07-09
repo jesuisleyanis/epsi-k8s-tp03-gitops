@@ -1,0 +1,27 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata: { name: site-data }
+spec:
+  accessModes: [ReadWriteOnce]
+  resources: { requests: { storage: 100Mi } }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: site-data
+  labels: { app: site-data }
+spec:
+  replicas: 1                       # RWO local-path → un seul consommateur
+  selector: { matchLabels: { app: site-data } }
+  strategy: { type: Recreate }
+  template:
+    metadata: { labels: { app: site-data } }
+    spec:
+      containers:
+        - name: writer
+          image: busybox:1.36
+          command: ["sh","-c","echo \"démarré le $(date)\" >> /data/journal.log; tail -f /data/journal.log"]
+          volumeMounts: [{ name: data, mountPath: /data }]
+      volumes:
+        - name: data
+          persistentVolumeClaim: { claimName: site-data }
