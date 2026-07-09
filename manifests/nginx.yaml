@@ -4,7 +4,7 @@ metadata:
   name: web-gitops
   labels: { app: web-gitops }
 spec:
-  replicas: 2                 # ← on modifiera cette valeur pour déclencher la synchro ArgoCD
+  replicas: 3                 # ← on modifiera cette valeur pour déclencher la synchro ArgoCD
   selector:
     matchLabels: { app: web-gitops }
   template:
