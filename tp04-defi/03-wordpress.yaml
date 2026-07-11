@@ -1,0 +1,49 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: wp-defi
+  labels: { app: wp-defi }
+spec:
+  replicas: 3                          # HA : ≥ 3 réplicas
+  selector: { matchLabels: { app: wp-defi } }
+  template:
+    metadata: { labels: { app: wp-defi } }
+    spec:
+      containers:
+        - name: wordpress
+          image: wordpress:6.5-apache
+          ports: [{ containerPort: 80 }]
+          envFrom:
+            - secretRef: { name: wp-db-defi }   # credentials + DB_HOST=mariadb (service)
+          volumeMounts:
+            - name: uploads
+              mountPath: /var/www/html/wp-content/uploads   # médias sur NFS partagé
+          resources:
+            requests: { cpu: "50m", memory: "160Mi" }
+            limits:   { cpu: "500m", memory: "420Mi" }
+      volumes:
+        - name: uploads
+          persistentVolumeClaim: { claimName: wp-uploads-pvc }
+---
+apiVersion: v1
+kind: Service
+metadata: { name: wp-defi }
+spec:
+  selector: { app: wp-defi }
+  ports: [{ port: 80, targetPort: 80 }]
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: wp-defi
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-body-size: "64m"   # autorise l'upload de médias
+spec:
+  ingressClassName: nginx               # exposé via l'Ingress (PAS NodePort) + IP MetalLB
+  rules:
+    - host: wordpress.192.168.252.241.nip.io
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend: { service: { name: wp-defi, port: { number: 80 }}}
