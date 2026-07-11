@@ -1,10 +1,13 @@
-# Abstraction de la BDD externe via Service ExternalName.
-# WordPress utilise WORDPRESS_DB_HOST=mariadb : CoreDNS renvoie un CNAME vers l'adresse externe.
-# Si l'IP de la VM BDD change → on modifie uniquement ce Service, WordPress reste inchangé.
+# Abstraction de la BDD externe : Service SANS selector "mariadb" → WordPress s'y connecte par
+# le nom (WORDPRESS_DB_HOST=mariadb). Le binding vers l'IP réelle se fait via un objet Endpoints
+# (fichier endpoints-mariadb.yaml appliqué hors ArgoCD, car ArgoCD exclut les Endpoints par défaut
+# — ce sont des ressources normalement gérées par un contrôleur). Si l'IP change → on met à jour
+# uniquement l'Endpoints, WordPress reste inchangé. C'est la forme correcte pour un backend par IP.
 apiVersion: v1
 kind: Service
 metadata:
   name: mariadb
 spec:
-  type: ExternalName
-  externalName: 192.168.252.8
+  ports:
+    - port: 3306
+      targetPort: 3306
